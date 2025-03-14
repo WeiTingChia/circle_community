@@ -10,7 +10,7 @@ export async function GET() {
       .sort({ loginCount: -1 })
       .limit(10);
     return NextResponse.json(topUsers);
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 });
   }
 }

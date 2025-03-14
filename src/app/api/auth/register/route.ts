@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ message: '註冊成功' });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 });
   }
 }

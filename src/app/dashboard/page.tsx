@@ -1,15 +1,46 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, List, Avatar, Input, Button, message, Modal, DatePicker } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
+interface User {
+  _id: string;
+  username: string;
+  loginCount: number;
+}
+
+interface Event {
+  _id: string;
+  title: string;
+  date: string;
+  content: string;
+}
+
+interface Message {
+  _id: string;
+  content: string;
+  userId: {
+    username: string;
+  };
+}
+
+interface ApiError extends Error {
+  message: string;
+}
+
+interface NewEvent {
+  title: string;
+  date: Date | null;
+  content: string;
+}
+
 export default function Dashboard() {
   const router = useRouter();
-  const [events, setEvents] = useState([]);
-  const [messages, setMessages] = useState([]);
-  const [topUsers, setTopUsers] = useState([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [topUsers, setTopUsers] = useState<User[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState({
     events: false,
@@ -17,13 +48,13 @@ export default function Dashboard() {
     leaderboard: false,
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newEvent, setNewEvent] = useState({
+  const [newEvent, setNewEvent] = useState<NewEvent>({
     title: '',
     date: null,
     content: ''
   });
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/');
@@ -40,14 +71,15 @@ export default function Dashboard() {
       setEvents(eventsRes);
       setMessages(messagesRes);
       setTopUsers(leaderboardRes);
-    } catch (error: any) {
-      if (error.message?.includes('401')) {
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+      if (apiError.message?.includes('401')) {
         router.push('/');
       }
     } finally {
       setLoading({ events: false, messages: false, leaderboard: false });
     }
-  };
+  }, [router]);
 
   const handlePostMessage = async () => {
     if (!newMessage.trim()) {
@@ -90,18 +122,17 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData, router]); // Add fetchData to dependencies
 
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="container mx-auto py-4 px-4 sm:py-6">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6">
-          {/* 登入排行榜 */}
           <div className="md:col-span-3 order-2 md:order-1">
             <Card title="登入排行榜" loading={loading.leaderboard}>
               <List
                 dataSource={topUsers}
-                renderItem={(user: any) => (
+                renderItem={(user: User) => (
                   <List.Item key={user._id} className="!block sm:!flex">
                     <List.Item.Meta
                       avatar={<Avatar>{user.username?.[0] || 'U'}</Avatar>}
@@ -114,14 +145,13 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* 活動事件 */}
           <div className="md:col-span-6 order-1 md:order-2">
-            <Card 
-              title="活動事件" 
+            <Card
+              title="活動事件"
               loading={loading.events}
               extra={
-                <Button 
-                  type="primary" 
+                <Button
+                  type="primary"
                   icon={<PlusOutlined />}
                   onClick={() => setIsModalOpen(true)}
                 >
@@ -131,7 +161,7 @@ export default function Dashboard() {
             >
               <List
                 dataSource={events}
-                renderItem={(event: any) => (
+                renderItem={(event: Event) => (
                   <List.Item key={event._id} className="!block sm:!flex">
                     <List.Item.Meta
                       title={<div className="break-words">{event.title}</div>}
@@ -148,13 +178,12 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* 留言板 */}
           <div className="md:col-span-3 order-3">
             <Card title="留言板" loading={loading.messages}>
               <div className="space-y-4">
                 <List
                   dataSource={messages}
-                  renderItem={(msg: any) => (
+                  renderItem={(msg: Message) => (
                     <List.Item key={msg._id} className="!block sm:!flex">
                       <List.Item.Meta
                         avatar={<Avatar>{msg.userId?.username?.[0] || 'U'}</Avatar>}
@@ -201,7 +230,10 @@ export default function Dashboard() {
           <DatePicker
             style={{ width: '100%' }}
             placeholder="選擇日期"
-            onChange={(date) => setNewEvent(prev => ({ ...prev, date: date?.toDate() }))}
+            onChange={(date) => setNewEvent(prev => ({
+              ...prev,
+              date: date ? date.toDate() : null
+            }))}
           />
           <Input.TextArea
             placeholder="事件內容"

@@ -7,7 +7,7 @@ export async function GET() {
     await connectDB();
     const events = await Event.find().sort({ date: -1 });
     return NextResponse.json(events);
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 });
   }
 }
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     const data = await req.json();
     const event = await Event.create(data);
     return NextResponse.json(event);
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 });
   }
 }

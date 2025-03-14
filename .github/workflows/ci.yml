@@ -10,6 +10,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      MONGODB_URI: mongodb+srv://thomaswei:!QAZ2wsx@cluster0.hzz0r.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+      JWT_SECRET: thomasIsAwesomeCoolGuy
+
     steps:
     - uses: actions/checkout@v3
     
@@ -19,10 +23,20 @@ jobs:
         node-version: '18'
         
     - name: Install dependencies
-      run: npm ci
+      run: npm install
       
     - name: Run linting
       run: npm run lint
       
     - name: Build project
       run: npm run build
+      env:
+        MONGODB_URI: mongodb+srv://thomaswei:!QAZ2wsx@cluster0.hzz0r.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+        JWT_SECRET: thomasIsAwesomeCoolGuy
+
+    - name: Deploy to Vercel
+      run: vercel deploy --prod --token ${{ secrets.VERCEL_TOKEN }}
+      env:
+        VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}

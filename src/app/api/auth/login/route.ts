@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1d' });
 
     return NextResponse.json({ token });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 });
   }
 }
