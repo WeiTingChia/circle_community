@@ -1,103 +1,185 @@
-import Image from "next/image";
+'use client';
+import { useState } from 'react';
+import { Input, Button, message, Tabs } from 'antd';
+import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { api } from '@/lib/api';
+import { useRouter } from 'next/navigation';
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+export default function AuthPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('login');
+  const [formData, setFormData] = useState({
+    username: '',
+    password: '',
+    confirmPassword: ''
+  });
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleLogin = async () => {
+    if (!formData.username || !formData.password) {
+      message.warning('請輸入帳號和密碼');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.token) {
+        localStorage.setItem('token', data.token);
+        message.success('登入成功');
+        router.push('/dashboard');
+      } else {
+        message.error(data.error || '登入失敗');
+      }
+    } catch (error) {
+      message.error('系統錯誤');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    if (!formData.username || !formData.password) {
+      message.warning('請輸入帳號和密碼');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      message.error('兩次輸入的密碼不一致');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        message.success('註冊成功，請登入');
+        setActiveTab('login');
+        setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
+      } else {
+        message.error(data.error || '註冊失敗');
+      }
+    } catch (error) {
+      message.error('系統錯誤');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const items = [
+    {
+      key: 'login',
+      label: '登入',
+      children: (
+        <div className="space-y-4">
+          <Input
+            size="large"
+            prefix={<UserOutlined />}
+            value={formData.username}
+            onChange={(e) => handleInputChange('username', e.target.value)}
+            placeholder="請輸入帳號"
+          />
+          <Input.Password
+            size="large"
+            prefix={<LockOutlined />}
+            value={formData.password}
+            onChange={(e) => handleInputChange('password', e.target.value)}
+            placeholder="請輸入密碼"
+            onPressEnter={handleLogin}
+          />
+          <Button 
+            type="primary" 
+            size="large" 
+            block 
+            onClick={handleLogin}
+            loading={loading}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            登入
+          </Button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+      ),
+    },
+    {
+      key: 'register',
+      label: '註冊',
+      children: (
+        <div className="space-y-4">
+          <Input
+            size="large"
+            prefix={<UserOutlined />}
+            value={formData.username}
+            onChange={(e) => handleInputChange('username', e.target.value)}
+            placeholder="請輸入帳號"
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+          <Input.Password
+            size="large"
+            prefix={<LockOutlined />}
+            value={formData.password}
+            onChange={(e) => handleInputChange('password', e.target.value)}
+            placeholder="請輸入密碼"
           />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
+          <Input.Password
+            size="large"
+            prefix={<LockOutlined />}
+            value={formData.confirmPassword}
+            onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+            placeholder="請確認密碼"
+            onPressEnter={handleRegister}
           />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <Button 
+            type="primary" 
+            size="large" 
+            block 
+            onClick={handleRegister}
+            loading={loading}
+          >
+            註冊
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+      <div className="bg-white p-6 sm:p-8 rounded-lg shadow-md w-full max-w-md">
+        <h1 className="text-xl sm:text-2xl font-bold mb-6 text-center">小圈圈</h1>
+        <Tabs 
+          activeKey={activeTab} 
+          onChange={setActiveTab} 
+          items={items}
+          centered
+          className="max-w-full"
+        />
+      </div>
     </div>
   );
 }
