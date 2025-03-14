@@ -4,6 +4,8 @@ import { Card, List, Avatar, Input, Button, message, Modal, DatePicker } from 'a
 import { PlusOutlined } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { LikeOutlined, LikeFilled, CommentOutlined } from '@ant-design/icons';
+import { getUserId } from '@/lib/utils';
 
 interface User {
   _id: string;
@@ -22,8 +24,19 @@ interface Message {
   _id: string;
   content: string;
   userId: {
+    _id: string;
     username: string;
   };
+  likes: string[];
+  replies: {
+    _id: string;
+    content: string;
+    userId: {
+      username: string;
+    };
+    createdAt: string;
+  }[];
+  createdAt: string;
 }
 
 interface ApiError extends Error {
@@ -53,6 +66,8 @@ export default function Dashboard() {
     date: null,
     content: ''
   });
+  const [replyVisible, setReplyVisible] = useState<{ [key: string]: boolean }>({});
+  const [replyContent, setReplyContent] = useState<{ [key: string]: string }>({});
 
   const fetchData = useCallback(async () => {
     const token = localStorage.getItem('token');
@@ -117,6 +132,32 @@ export default function Dashboard() {
       fetchData();
     } catch (error) {
       message.error('創建事件失敗');
+    }
+  };
+  const handleLike = async (messageId: string) => {
+    try {
+      await api.toggleLike(messageId);
+      fetchData();
+    } catch (error) {
+      message.error('操作失敗');
+    }
+  };
+
+  const handleReply = async (messageId: string) => {
+    const content = replyContent[messageId];
+    if (!content?.trim()) {
+      message.warning('請輸入回覆內容');
+      return;
+    }
+
+    try {
+      await api.replyToMessage(messageId, content);
+      message.success('回覆成功');
+      setReplyContent(prev => ({ ...prev, [messageId]: '' }));
+      setReplyVisible(prev => ({ ...prev, [messageId]: false }));
+      fetchData();
+    } catch (error) {
+      message.error('回覆失敗');
     }
   };
 
@@ -184,11 +225,60 @@ export default function Dashboard() {
                 <List
                   dataSource={messages}
                   renderItem={(msg: Message) => (
-                    <List.Item key={msg._id} className="!block sm:!flex">
+                    <List.Item
+                      key={msg._id}
+                      className="!block sm:!flex"
+                      actions={[
+                        <Button
+                          key="like"
+                          type="text"
+                          icon={msg.likes.includes(getUserId()) ? <LikeFilled /> : <LikeOutlined />}
+                          onClick={() => handleLike(msg._id)}
+                        >
+                          {msg.likes.length}
+                        </Button>,
+                        <Button
+                          key="reply"
+                          type="text"
+                          icon={<CommentOutlined />}
+                          onClick={() => setReplyVisible(prev => ({ ...prev, [msg._id]: !prev[msg._id] }))}
+                        >
+                          回覆
+                        </Button>
+                      ]}
+                    >
                       <List.Item.Meta
                         avatar={<Avatar>{msg.userId?.username?.[0] || 'U'}</Avatar>}
                         title={msg.userId?.username || '未知用戶'}
-                        description={<div className="break-words">{msg.content}</div>}
+                        description={
+                          <div className="space-y-2">
+                            <div className="break-words">{msg.content}</div>
+                            {msg.replies.length > 0 && (
+                              <div className="pl-4 space-y-2 border-l-2">
+                                {msg.replies.map(reply => (
+                                  <div key={reply._id} className="text-sm">
+                                    <span className="font-medium">{reply.userId.username}</span>：
+                                    {reply.content}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {replyVisible[msg._id] && (
+                              <div className="flex gap-2">
+                                <Input
+                                  size="small"
+                                  value={replyContent[msg._id] || ''}
+                                  onChange={e => setReplyContent(prev => ({ ...prev, [msg._id]: e.target.value }))}
+                                  placeholder="輸入回覆"
+                                  onPressEnter={() => handleReply(msg._id)}
+                                />
+                                <Button size="small" type="primary" onClick={() => handleReply(msg._id)}>
+                                  回覆
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        }
                       />
                     </List.Item>
                   )}
@@ -207,42 +297,44 @@ export default function Dashboard() {
               </div>
             </Card>
           </div>
-        </div>
-      </div>
 
-      <Modal
-        title="創建新事件"
-        open={isModalOpen}
-        onOk={handleCreateEvent}
-        onCancel={() => {
-          setIsModalOpen(false);
-          setNewEvent({ title: '', date: null, content: '' });
-        }}
-        width="90%"
-        className="sm:max-w-lg"
-      >
-        <div className="space-y-4">
-          <Input
-            placeholder="事件標題"
-            value={newEvent.title}
-            onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
-          />
-          <DatePicker
-            style={{ width: '100%' }}
-            placeholder="選擇日期"
-            onChange={(date) => setNewEvent(prev => ({
-              ...prev,
-              date: date ? date.toDate() : null
-            }))}
-          />
-          <Input.TextArea
-            placeholder="事件內容"
-            value={newEvent.content}
-            onChange={(e) => setNewEvent(prev => ({ ...prev, content: e.target.value }))}
-            rows={4}
-          />
         </div>
-      </Modal>
+
+        <Modal
+          title="創建新事件"
+          open={isModalOpen}
+          onOk={handleCreateEvent}
+          onCancel={() => {
+            setIsModalOpen(false);
+            setNewEvent({ title: '', date: null, content: '' });
+          }}
+          width="90%"
+          className="sm:max-w-lg"
+        >
+          <div className="space-y-4">
+            <Input
+              placeholder="事件標題"
+              value={newEvent.title}
+              onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
+            />
+            <DatePicker
+              style={{ width: '100%' }}
+              placeholder="選擇日期"
+              onChange={(date) => setNewEvent(prev => ({
+                ...prev,
+                date: date ? date.toDate() : null
+              }))}
+            />
+            <Input.TextArea
+              placeholder="事件內容"
+              value={newEvent.content}
+              onChange={(e) => setNewEvent(prev => ({ ...prev, content: e.target.value }))}
+              rows={4}
+            />
+          </div>
+        </Modal>
+      </div>
     </div>
   );
 }
+

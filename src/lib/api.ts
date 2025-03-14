@@ -70,6 +70,34 @@ class ApiService {
     if (!response.ok) throw new Error(`${response.status}`);
     return response.json();
   }
+
+  async replyToMessage(messageId: string, content: string) {
+    const token = localStorage.getItem('token');
+    const tokenPayload = token ? JSON.parse(atob(token.split('.')[1])) : null;
+    const userId = tokenPayload?.userId;
+
+    const response = await fetch(`/api/messages/${messageId}/reply`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ content, userId })
+    });
+    if (!response.ok) throw new Error(`${response.status}`);
+    return response.json();
+  }
+
+  async toggleLike(messageId: string) {
+    const token = localStorage.getItem('token');
+    const tokenPayload = token ? JSON.parse(atob(token.split('.')[1])) : null;
+    const userId = tokenPayload?.userId;
+
+    const response = await fetch(`/api/messages/${messageId}/like`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ userId })
+    });
+    if (!response.ok) throw new Error(`${response.status}`);
+    return response.json();
+  }
 }
 
 export const api = new ApiService();
