@@ -4,13 +4,13 @@ import Message from '@/models/Message';
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
     const { userId } = await req.json();
-    
-    const message = await Message.findById(params.id);
+    const { id } = await params
+    const message = await Message.findById(id);
     if (!message) {
       return NextResponse.json({ error: '留言不存在' }, { status: 404 });
     }
