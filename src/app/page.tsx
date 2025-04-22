@@ -4,7 +4,6 @@ import { Input, Button, message, Tabs } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-
 export default function AuthPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -115,10 +114,10 @@ export default function AuthPage() {
             placeholder="請輸入密碼"
             onPressEnter={handleLogin}
           />
-          <Button 
-            type="primary" 
-            size="large" 
-            block 
+          <Button
+            type="primary"
+            size="large"
+            block
             onClick={handleLogin}
             loading={loading}
           >
@@ -154,10 +153,10 @@ export default function AuthPage() {
             placeholder="請確認密碼"
             onPressEnter={handleRegister}
           />
-          <Button 
-            type="primary" 
-            size="large" 
-            block 
+          <Button
+            type="primary"
+            size="large"
+            block
             onClick={handleRegister}
             loading={loading}
           >
@@ -172,9 +171,9 @@ export default function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="bg-white p-6 sm:p-8 rounded-lg shadow-md w-full max-w-md">
         <h1 className="text-xl sm:text-2xl font-bold mb-6 text-center">小圈圈</h1>
-        <Tabs 
-          activeKey={activeTab} 
-          onChange={setActiveTab} 
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
           items={items}
           centered
           className="max-w-full"

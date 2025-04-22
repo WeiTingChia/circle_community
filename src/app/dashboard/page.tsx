@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { LikeOutlined, LikeFilled, CommentOutlined } from '@ant-design/icons';
 import { getUserId } from '@/lib/utils';
+import SunTimeQuery from '@/components/SunTimeQuery';
 
 interface User {
   _id: string;
@@ -168,6 +169,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="container mx-auto py-4 px-4 sm:py-6">
+        <SunTimeQuery />
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6">
           <div className="md:col-span-3 order-2 md:order-1">
             <Card title="登入排行榜" loading={loading.leaderboard}>
